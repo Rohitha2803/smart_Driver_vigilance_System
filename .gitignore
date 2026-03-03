@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# Models (too large for git)
+backend/models/*.weights
+backend/models/*.tflite
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Debug/test scripts
+backend/debug_*.py
+backend/test_*.py
+dl_effdet.py
+download_models.py
