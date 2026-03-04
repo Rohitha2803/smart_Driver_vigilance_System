@@ -21,4 +21,3 @@ Thumbs.db
 backend/debug_*.py
 backend/test_*.py
 dl_effdet.py
-download_models.py
