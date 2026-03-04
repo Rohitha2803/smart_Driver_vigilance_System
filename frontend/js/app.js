@@ -168,6 +168,7 @@ function renderFrame(base64Data) {
 let lastDrowsyState = false;
 let lastYawnState = false;
 let lastPhoneState = false;
+let lastHeadTurnState = false;
 
 function updateStatus(status) {
     const drowsy = status.drowsiness;
@@ -255,14 +256,47 @@ function updateStatus(status) {
         }
     }
 
+    // ── Head Turn Status ──
+    const headTurnText = document.getElementById('headTurnText');
+    const headTurnStatus = document.getElementById('headTurnStatus');
+    const headTurnCard = document.getElementById('headTurnCard');
+    const headTurnInfo = document.getElementById('headTurnInfo');
+
+    if (drowsy.head_turn_alert) {
+        headTurnText.textContent = `DISTRACTED (${drowsy.head_direction.toUpperCase()})`;
+        headTurnStatus.querySelector('.status-dot').className = 'status-dot status-danger';
+        headTurnCard.className = 'metric-card glass-card status-card alert-active';
+        headTurnInfo.textContent = 'Looking away from road!';
+        if (!lastHeadTurnState) {
+            addLog(`⚠️ DISTRACTED — Looking ${drowsy.head_direction} from road!`, 'danger');
+            lastHeadTurnState = true;
+        }
+    } else if (drowsy.looking_sideways) {
+        headTurnText.textContent = `Looking ${drowsy.head_direction}`;
+        headTurnStatus.querySelector('.status-dot').className = 'status-dot status-warning';
+        headTurnCard.className = 'metric-card glass-card status-card warning-active';
+        headTurnInfo.textContent = 'Keep eyes on road';
+    } else {
+        headTurnText.textContent = 'Center';
+        headTurnStatus.querySelector('.status-dot').className = 'status-dot status-safe';
+        headTurnCard.className = 'metric-card glass-card status-card';
+        headTurnInfo.textContent = '';
+        if (lastHeadTurnState) {
+            addLog('✓ Eyes back on road', 'info');
+            lastHeadTurnState = false;
+        }
+    }
+
     // ── Global Alert State ──
-    const hasAlert = drowsy.drowsy || phone.alert;
+    const hasAlert = drowsy.drowsy || phone.alert || drowsy.head_turn_alert;
     if (hasAlert) {
-        showAlert(drowsy.drowsy && phone.alert
-            ? 'DROWSINESS & PHONE DETECTED!'
-            : drowsy.drowsy
-                ? 'DROWSINESS DETECTED!'
-                : 'MOBILE PHONE DETECTED!');
+        let alertMsg = 'ALERT DETECTED!';
+        if (drowsy.drowsy && phone.alert) alertMsg = 'DROWSINESS & PHONE DETECTED!';
+        else if (drowsy.drowsy) alertMsg = 'DROWSINESS DETECTED!';
+        else if (phone.alert) alertMsg = 'MOBILE PHONE DETECTED!';
+        else if (drowsy.head_turn_alert) alertMsg = 'DISTRACTED - LOOK AHEAD!';
+
+        showAlert(alertMsg);
         playAlarm();
         systemStatus.className = 'badge badge-alert';
         systemStatusText.textContent = 'ALERT';
@@ -334,7 +368,7 @@ function playAlarm() {
 function stopAlarm() {
     isAlarmPlaying = false;
     if (alarmAudioCtx && alarmAudioCtx.state === 'running') {
-        alarmAudioCtx.close().catch(() => {});
+        alarmAudioCtx.close().catch(() => { });
         alarmAudioCtx = null;
     }
 }

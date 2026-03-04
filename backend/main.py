@@ -137,7 +137,8 @@ class CameraManager:
         }
 
         # Trigger server-side alarm if needed
-        if drowsy_status["drowsy"] or phone_status.get("alert", False):
+        if (drowsy_status["drowsy"] or phone_status.get("alert", False)
+                or drowsy_status.get("head_turn_alert", False)):
             self.alarm_manager.play_alarm()
 
         return annotated, status
@@ -231,6 +232,44 @@ class CameraManager:
                 3,
             )
             cv2.rectangle(frame, (2, 2), (w - 3, h - 3), (255, 0, 255), 4)
+
+        # Head turn overlay
+        if drowsy_status.get("looking_sideways", False):
+            direction = drowsy_status.get("head_direction", "")
+            cv2.putText(
+                frame,
+                f"LOOKING {direction.upper()}",
+                (w // 2 - 100, h - 60),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 255, 255),  # yellow
+                2,
+            )
+
+        if drowsy_status.get("head_turn_alert", False):
+            cv2.putText(
+                frame,
+                "!! DISTRACTED - LOOK AHEAD !!",
+                (w // 2 - 180, h - 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.9,
+                (0, 255, 255),
+                3,
+            )
+            cv2.rectangle(frame, (1, 1), (w - 2, h - 2), (0, 255, 255), 4)
+
+        # Head direction indicator
+        direction = drowsy_status.get("head_direction", "center")
+        dir_color = (0, 255, 255) if direction != "center" else (255, 255, 255)
+        cv2.putText(
+            frame,
+            f"Head: {direction}",
+            (10, 120),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            dir_color,
+            2,
+        )
 
         # Blink count
         cv2.putText(
